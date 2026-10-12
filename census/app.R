@@ -7,50 +7,66 @@
 #    https://shiny.posit.co/
 #
 
+library(maps)
+library(mapproj)
 library(shiny)
 library(bslib)
+source("census-app/helpers.R")
+counties <- readRDS("census-app/data/counties.rds")
 
-# Define UI for application that draws a histogram
+# User interface ----
 ui <- page_sidebar(
-  title = 'censusVis',
+  title = "censusVis",
+  
   sidebar = sidebar(
     helpText(
-      'Create demographic maps with information from the 2010 US Census'
+      "Create demographic maps with information from the 2010 US Census."
     ),
     selectInput(
-      'var',
-      label = 'Choose a variable to display',
-      choices = list('Percent White' = 1, 'Percent Black' = 2, 'Percent Hispanic' = 3, 'Percent Asian' = 4),
-      selected = 1
+      "var",
+      label = "Choose a variable to display",
+      choices =
+        c(
+          "Percent White",
+          "Percent Black",
+          "Percent Hispanic",
+          "Percent Asian"
+        ),
+      selected = "Percent White"
     ),
-    
     sliderInput(
-      'range',
-      label = 'Range of interest:',
-      min = 0,
-      max = 100,
+      "range",
+      label = "Range of interest:",
+      min = 0, 
+      max = 100, 
       value = c(0, 100)
     )
   ),
-  textOutput('selected_var'),
-  testOutput('min_max')
+  
+  card(plotOutput("map"))
 )
 
-
-# Define server logic required to draw a histogram
+# Server logic ----
 server <- function(input, output) {
-  
-  output$selected_var <- renderText({
-    paste('You have selected', input$var)
+  output$map <- renderPlot({
+    data <- switch(input$var,
+                   'Percent White' = counties$white,
+                   'Percent Black' = counties$black,
+                   'Percent Hispanic' = counties$hispanic,
+                   'Percent Asian' = counties$asian)
+    color <- switch(input4var,
+                    'Percent White' = 'darkgreen',
+                    'Percent Black' = 'black',
+                    'Percent Hispanic' = 'darkorange',
+                    'Percent Asian' = 'darkviolet')
+    legend <- switch(input$var,
+                     'Percent White' = '% White',
+                     'Percent Black' = '% Black',
+                     'Percent Hispanic' = '% Hispanic',
+                     'Percent Asian' = '% Asian')
+    percent_map(data, color, legend, input$range[1], input$range[2])
   })
-  
-  output$min_max <- renderText({
-    paste('You have chosen a range that goes from',
-          input$range[1], 'to', input$range[2])
-  })
-  
 }
 
-# Run the application 
-shinyApp(ui = ui, server = server)
-
+# Run app ----
+shinyApp(ui, server)
